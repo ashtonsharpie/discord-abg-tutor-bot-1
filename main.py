@@ -7,6 +7,7 @@ from discord import Intents, Client, Message, DMChannel
 from flask import Flask
 from threading import Thread
 from huggingface_hub import InferenceClient
+from keep_alive import keep_alive
 
 # Load tokens from .env file
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
