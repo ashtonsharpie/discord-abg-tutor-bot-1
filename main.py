@@ -7,7 +7,6 @@ from discord import Intents, Client, Message, DMChannel
 from flask import Flask
 from threading import Thread
 from huggingface_hub import InferenceClient
-from keep_alive import keep_alive
 
 # Load tokens from .env file
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
@@ -15,20 +14,6 @@ HF_API_KEY: Final[str] = os.getenv('HUGGINGFACE_API_KEY')
 
 # Configure Hugging Face
 hf_client = InferenceClient(token=HF_API_KEY)
-
-# ===== Keep-alive server =====
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is alive"
-
-def run():
-    app.run(host='0.0.0.0', port=8080, debug=False)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
 
 # Set up bot permissions (intents)
 intents: Intents = Intents.default()
@@ -931,5 +916,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    keep_alive()
     client.run(TOKEN)
