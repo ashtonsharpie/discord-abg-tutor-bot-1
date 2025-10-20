@@ -7,6 +7,23 @@ from discord import Intents, Client, Message, DMChannel
 from flask import Flask
 from threading import Thread
 from huggingface_hub import InferenceClient
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+PORT = int(os.environ.get("PORT", 10000))
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running!")
+
+def run_server():
+    server = HTTPServer(("", PORT), Handler)
+    print(f"HTTP server running on port {PORT}")
+    server.serve_forever()
+
+# Start server in background thread
+threading.Thread(target=run_server, daemon=True).start()
 
 # Load tokens from .env file
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
