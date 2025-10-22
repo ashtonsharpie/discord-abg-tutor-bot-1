@@ -1354,9 +1354,17 @@ async def on_message(message: Message) -> None:
     is_mentioned = client.user.mentioned_in(message)
 
     # Send welcome message to new users (first-time DM)
-    if is_dm and user_id not in welcomed_users:
+    if user_id not in welcomed_users and (is_dm or contains_abg_tutor or is_mentioned):
         welcomed_users.add(user_id)
-        await message.channel.send(NEW_USER_WELCOME)
+        if is_dm:
+            await message.channel.send(NEW_USER_WELCOME)
+        else:
+            # In server, try to DM them
+            try:
+                await message.author.send(NEW_USER_WELCOME)
+            except:
+                # If DM fails, reply in channel
+                await message.reply(NEW_USER_WELCOME, mention_author=False)
         return
 
     # Handle ! commands FIRST (these work without mentioning abg tutor)
