@@ -1423,78 +1423,78 @@ async def on_message(message: Message) -> None:
         return
 
 # "First Start" - One-off responses (only if "abg tutor" mentioned and NOT in conversation)
-if (contains_abg_tutor or is_mentioned) and not in_active_conversation:
-    # Check for compliment phrases first
-    compliment_phrases = [
-        'i like abg tutor', 'i love abg tutor', 'love abg tutor', 'i luv abg tutor',
-        'luv abg tutor', 'love u abg tutor', 'ily abg tutor', 'abg tutor ily',
-        'i <3 abg tutor', 'abg tutor <3', 'i love you abg tutor',
-        'abg tutor is great', 'abg tutor is cool', 'abg tutor is the best',
-        'abg tutor is amazing', 'abg tutor is awesome', 'abg tutor is so good',
-        'abg tutor is fire', 'abg tutor is goated', 'abg tutor is elite',
-        'abg tutor so good', 'abg tutor really good', 'abg tutor too good',
-        'abg tutor goated', 'abg tutor the goat', 'abg tutor goat',
-        'abg tutor w', 'w abg tutor', 'abg tutor is a w',
-        'abg tutor good', 'abg tutor best', 'abg tutor fire', 'abg tutor cool',
-        'thank you abg tutor', 'thanks abg tutor', 'ty abg tutor', 'thx abg tutor',
-        'abg tutor clutch', 'abg tutor carrying', 'abg tutor saved me',
-    ]
-
-    if any(phrase in lowered_content for phrase in compliment_phrases):
-        romantic_reactions = ['❤️', '💕', '💖', '💗', '💓', '💞', '💝', '🥰', '😍', '🥹', '😳', '🦋']
-        friendly_reactions = ['👍', '💯', '🔥', '✨', '🙌', '🤝', '😎', '💪', '⭐', '🎉', '👊', '🫡']
-
-        romantic_responses = [
-            'you\'re making me blush stopppp 💕',
-            'why am i blushing at my screen rn 😳',
-            'you\'re too sweet i\'m melting 💕',
+    if (contains_abg_tutor or is_mentioned) and not in_active_conversation:
+        # Check for compliment phrases first
+        compliment_phrases = [
+            'i like abg tutor', 'i love abg tutor', 'love abg tutor', 'i luv abg tutor',
+            'luv abg tutor', 'love u abg tutor', 'ily abg tutor', 'abg tutor ily',
+            'i <3 abg tutor', 'abg tutor <3', 'i love you abg tutor',
+            'abg tutor is great', 'abg tutor is cool', 'abg tutor is the best',
+            'abg tutor is amazing', 'abg tutor is awesome', 'abg tutor is so good',
+            'abg tutor is fire', 'abg tutor is goated', 'abg tutor is elite',
+            'abg tutor so good', 'abg tutor really good', 'abg tutor too good',
+            'abg tutor goated', 'abg tutor the goat', 'abg tutor goat',
+            'abg tutor w', 'w abg tutor', 'abg tutor is a w',
+            'abg tutor good', 'abg tutor best', 'abg tutor fire', 'abg tutor cool',
+            'thank you abg tutor', 'thanks abg tutor', 'ty abg tutor', 'thx abg tutor',
+            'abg tutor clutch', 'abg tutor carrying', 'abg tutor saved me',
         ]
-
-        friendly_responses = [
-            'aw thanks! you\'re awesome! ✨',
-            'appreciate you fr 💙',
-            'you\'re too kind! 😇',
-        ]
-
-        special_person_id = 561352123548172288
-
-        if message.author.id == special_person_id:
-            await message.add_reaction(random.choice(romantic_reactions))
-            response = random.choice(romantic_responses)
-        else:
-            if random.random() < 0.05:
+    
+        if any(phrase in lowered_content for phrase in compliment_phrases):
+            romantic_reactions = ['❤️', '💕', '💖', '💗', '💓', '💞', '💝', '🥰', '😍', '🥹', '😳', '🦋']
+            friendly_reactions = ['👍', '💯', '🔥', '✨', '🙌', '🤝', '😎', '💪', '⭐', '🎉', '👊', '🫡']
+    
+            romantic_responses = [
+                'you\'re making me blush stopppp 💕',
+                'why am i blushing at my screen rn 😳',
+                'you\'re too sweet i\'m melting 💕',
+            ]
+    
+            friendly_responses = [
+                'aw thanks! you\'re awesome! ✨',
+                'appreciate you fr 💙',
+                'you\'re too kind! 😇',
+            ]
+    
+            special_person_id = 561352123548172288
+    
+            if message.author.id == special_person_id:
                 await message.add_reaction(random.choice(romantic_reactions))
                 response = random.choice(romantic_responses)
             else:
-                await message.add_reaction(random.choice(friendly_reactions))
-                response = random.choice(friendly_responses)
-
-        await message.reply(response, mention_author=False)
+                if random.random() < 0.05:
+                    await message.add_reaction(random.choice(romantic_reactions))
+                    response = random.choice(romantic_responses)
+                else:
+                    await message.add_reaction(random.choice(friendly_reactions))
+                    response = random.choice(friendly_responses)
+    
+            await message.reply(response, mention_author=False)
+            return
+    
+        # Not a compliment - use AI to comprehend and respond naturally
+        user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
+        
+        # For one-off questions, use AI directly to comprehend and respond naturally
+        if not ai_limit_reached:
+            try:
+                ai_response = generate_ai_reply(user_id, user_input, is_special_user)
+                if ai_response:
+                    await message.reply(ai_response, mention_author=False)
+                    # Clear history after one-off response so it doesn't persist
+                    if user_id in user_histories:
+                        del user_histories[user_id]
+                    if user_id in user_last_tone:
+                        del user_last_tone[user_id]
+                    return
+            except Exception as e:
+                print(f"AI Error for one-off: {e}")
+        
+        # Only use keyword fallbacks if AI completely fails
+        response = get_conversation_response(user_input, user_id)
+        if response:
+            await message.reply(response, mention_author=False)
         return
-
-    # Not a compliment - use AI to comprehend and respond naturally
-    user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
-    
-    # For one-off questions, use AI directly to comprehend and respond naturally
-    if not ai_limit_reached:
-        try:
-            ai_response = generate_ai_reply(user_id, user_input, is_special_user)
-            if ai_response:
-                await message.reply(ai_response, mention_author=False)
-                # Clear history after one-off response so it doesn't persist
-                if user_id in user_histories:
-                    del user_histories[user_id]
-                if user_id in user_last_tone:
-                    del user_last_tone[user_id]
-                return
-        except Exception as e:
-            print(f"AI Error for one-off: {e}")
-    
-    # Only use keyword fallbacks if AI completely fails
-    response = get_conversation_response(user_input, user_id)
-    if response:
-        await message.reply(response, mention_author=False)
-    return
 
 
 def main() -> None:
