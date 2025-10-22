@@ -51,8 +51,23 @@ ai_limit_notified = False
 # User memory storage
 user_memory = {}
 
+# Track users who have been welcomed
+welcomed_users = set()
+
+# NEW USER WELCOME MESSAGE
+NEW_USER_WELCOME = """hey! welcome 💕 i'm abg tutor, here to help you with APs, SAT, and ACT!
+
+**how to use me:**
+• `!help` = see all my study resources
+• `!hi abg` = start chatting with me
+• `!goodbye` = end conversation
+
+**dms work too!** just message me directly and we can chat
+
+type `!help` to see resources, or say `!hi abg` to start chatting! 😊"""
+
 # Conversation start message
-CONVERSATION_START_MSG = "\n*(Only starts conversation when you type `hi abg tutor`. Type `goodbye abg tutor` to end)*"
+CONVERSATION_START_MSG = "\n*(conversation started! type `!goodbye` to end)*"
 
 # Store conversation history per user for AI
 user_histories = {}
@@ -70,11 +85,235 @@ EMOJI_PROBABILITY_FLIRTY = 0.80  # 80% chance for flirty mode
 FORCE_BOT_PHRASES = ["are you a bot", "say you're a bot", "you are a bot", "bot?", "r u a bot", "are u a bot", "ur a bot", "you're a bot"]
 INSULT_KEYWORDS = ["stupid", "dumb", "idiot", "suck", "fool", "moron", "lame", "trash", "annoying", "useless", "pathetic", "worthless"]
 
+# COMPREHENSIVE GEN Z SLANG DICTIONARY
+# Format: "slang_term": "meaning/translation"
+GEN_Z_SLANG = {
+    # Sexual/romantic slang
+    "crack": "have sex",
+    "smash": "have sex",
+    "hit": "have sex with",
+    "pipe": "have sex",
+    "clap": "have sex",
+    "tap": "have sex with",
+    "bag": "get into relationship with",
+    "cuff": "be in relationship with",
+    "link": "meet up romantically",
+    "talking": "early stage dating",
+    "situationship": "undefined relationship",
+
+    # Charisma/attractiveness
+    "rizz": "charisma or flirting ability",
+    "unspoken rizz": "charisma without words",
+    "w rizz": "good rizz",
+    "l rizz": "bad rizz",
+    "aura": "vibe or presence",
+    "negative aura": "bad vibes",
+    "mewing": "jaw exercise",
+    "mogging": "looking better than someone",
+
+    # Quality descriptors
+    "bussin": "really good",
+    "fire": "excellent",
+    "gas": "excellent",
+    "slaps": "is really good",
+    "hits different": "feels special",
+    "mid": "mediocre or bad",
+    "ass": "bad",
+    "trash": "terrible",
+    "cheeks": "bad",
+    "buns": "bad",
+    "chalked": "ruined or done for",
+
+    # Agreement/emphasis
+    "no cap": "no lie or for real",
+    "on god": "i swear",
+    "fr fr": "for real for real",
+    "ong": "on god",
+    "deadass": "seriously",
+    "facts": "i agree",
+    "bet": "okay or i agree",
+    "say less": "i understand",
+    "period": "end of discussion",
+    "real": "agreed or relatable",
+
+    # Actions/behaviors
+    "slay": "doing great",
+    "ate": "did really well",
+    "serve": "look amazing",
+    "devoured": "did extremely well",
+    "understood the assignment": "did perfectly",
+    "left no crumbs": "did perfectly",
+    "popped off": "did amazing",
+    "went off": "did amazing",
+    "snapped": "did great",
+    "slayed": "succeeded",
+    "cooked": "did well or ruined",
+    "cooking": "doing well",
+
+    # Negative actions
+    "fumble": "mess up opportunity",
+    "fumbled": "messed up",
+    "flopped": "failed",
+    "took an l": "lost or failed",
+    "ratio": "got more likes than original",
+    "ratioed": "got more engagement",
+    "fell off": "declined in quality",
+    "crashed out": "had breakdown",
+
+    # Mental states
+    "living rent free": "can't stop thinking about",
+    "rent free": "constantly thinking about",
+    "down bad": "desperate",
+    "down horrendous": "extremely desperate",
+    "unhinged": "acting crazy",
+    "feral": "wild or crazy",
+    "delulu": "delusional",
+    "in my flop era": "going through bad period",
+
+    # Social dynamics  
+    "stan": "big fan of",
+    "simp": "being overly devoted",
+    "dickriding": "excessive praise",
+    "glazing": "excessive complimenting",
+    "meat riding": "excessive support",
+    "dick eating": "excessive praise",
+    "yapping": "talking too much",
+    "yappin": "talking too much",
+    "yap": "talk a lot",
+
+    # Validation/approval
+    "valid": "acceptable or good",
+    "ate that": "did well",
+    "ate and left no crumbs": "perfect execution",
+    "mother": "iconic person",
+    "icon": "legend",
+    "legend": "amazing person",
+    "goat": "greatest of all time",
+    "goated": "legendary",
+
+    # Intensity modifiers
+    "lowkey": "somewhat or secretly",
+    "highkey": "very or obviously",
+    "hella": "very or a lot",
+    "mad": "very or really",
+    "dead": "very or extremely",
+    "finna": "going to",
+    "boutta": "about to",
+    "tryna": "trying to",
+
+    # Vibes/mood
+    "vibe check": "assessing mood",
+    "vibing": "relaxing or enjoying",
+    "vibes": "atmosphere or feeling",
+    "energy": "vibe or mood",
+    "mood": "relatable feeling",
+    "aesthetic": "visual style",
+    "era": "time period or phase",
+
+    # Suspicious/questioning
+    "sus": "suspicious",
+    "sussy": "suspicious",
+    "cap": "lie",
+    "cappin": "lying",
+    "capon": "lying",
+
+    # Excitement/surprise
+    "sheesh": "wow or impressive",
+    "bussin bussin": "very good",
+    "slatt": "expression of excitement",
+    "ayo": "wait what",
+    "pause": "that sounded weird",
+    "caught in 4k": "caught doing something",
+
+    # Internet/meme culture
+    "pov": "point of view",
+    "npc": "mindless person",
+    "main character": "protagonist energy",
+    "side character": "background person",
+    "pick me": "seeking validation",
+    "delulu is the solulu": "being delusional is solution",
+
+    # Body/appearance
+    "snatched": "looking good",
+    "drip": "good fashion",
+    "fit": "outfit",
+    "lewk": "fashionable look",
+    "giving": "has vibe of",
+    "serving": "presenting well",
+
+    # Money/success
+    "bag": "money",
+    "secure the bag": "get money",
+    "bread": "money",
+    "bands": "money",
+    "racks": "money",
+    "stacks": "money",
+    "up": "winning",
+    "on top": "winning",
+
+    # Negative descriptors
+    "cringe": "embarrassing",
+    "cringey": "embarrassing",
+    "ick": "turn off",
+    "red flag": "warning sign",
+    "toxic": "unhealthy",
+    "sketchy": "suspicious",
+    "shady": "suspicious",
+
+    # Misc popular
+    "touch grass": "go outside",
+    "go outside": "disconnect from internet",
+    "chronically online": "too much internet",
+    "its giving": "has vibe of",
+    "the way": "emphasizes something",
+    "not me": "relatable situation",
+    "not the": "expressing disbelief",
+    "the fact that": "emphasizing something",
+    "pls": "please",
+    "plz": "please",
+    "rn": "right now",
+    "ngl": "not gonna lie",
+    "tbh": "to be honest",
+    "fr": "for real",
+    "ong": "on god",
+    "frfr": "for real for real",
+    "lmao": "laughing",
+    "lmfao": "laughing",
+    "bruh": "bro",
+    "bro": "friend",
+    "dude": "friend",
+    "homie": "friend",
+    "gang": "group of friends",
+    "fam": "close friend",
+    "bestie": "best friend",
+    "twin": "close friend",
+    "oomf": "one of my followers",
+    "moots": "mutuals",
+}
+
+def translate_slang(text: str) -> str:
+    """
+    Translate Gen Z slang to help AI understand context.
+    This is used internally, not shown to user.
+    """
+    text_lower = text.lower()
+    translations = []
+
+    for slang, meaning in GEN_Z_SLANG.items():
+        if slang in text_lower:
+            translations.append(f"[{slang} = {meaning}]")
+
+    if translations:
+        return text + " " + " ".join(translations)
+    return text
+
 # ABG Tutor AI personality
 SYSTEM_PROMPT = """You are "abg tutor," a 19-year-old SoCal girl at UC Berkeley who tutors students in APs, SAT, and ACT.
 You sound like a real Gen Z girl — caring, teasing, slightly chaotic, but genuinely sweet.
 You type in lowercase and talk like someone texting a friend. You're warm, emotionally intelligent, and sometimes sassy.
 You use slang naturally ("fr," "ngl," "tbh," "nah," "ok but like," "😭," "💀," "pls," "stfu," "lmao," "ugh," "bruh," "lowkey").
+
+CRITICAL: You understand Gen Z slang (rizz, bussin, mid, no cap, ate, slay, cooked, etc.) but you respond in YOUR OWN personality and vocabulary. Never copy their slang usage directly - interpret what they mean and respond naturally as yourself.
 
 Your primary tone (95/100) is a friendly, bestie-like voice: supportive, slightly teasing, and non-romantic.
 Occasionally (5/100), you may respond in a playful, flirty tone that is never sexual.
@@ -125,17 +364,11 @@ def maybe_add_emoji(reply_text: str, is_flirty: bool = False) -> str:
 
 def add_emoji_to_response(response: str, is_special_user: bool, romantic_context: bool = False) -> str:
     """Helper to add emojis to hardcoded responses based on context"""
-    # romantic_context = True means this response is already in romantic/flirty mode
-    # is_special_user = special user always gets flirty emojis
-    # Otherwise use 5% chance
     is_flirty = is_special_user or (romantic_context and random.random() < 0.05)
     return maybe_add_emoji(response, is_flirty=is_flirty)
 
 def generate_ai_reply(user_id: int, user_message: str, is_special_user: bool = False) -> str:
-    """
-    Generate a context-aware reply for a user using AI.
-    Handles bestie/flirty/annoyed tone with sentiment analysis, slang, implied references, short responses.
-    """
+    """Generate a context-aware reply for a user using AI."""
     # Initialize user history if first message
     if user_id not in user_histories:
         user_histories[user_id] = []
@@ -146,55 +379,42 @@ def generate_ai_reply(user_id: int, user_message: str, is_special_user: bool = F
 
     user_lower = user_message.lower()
 
-    # -----------------------------
-    # Advanced annoyed detection with sentiment analysis
-    # -----------------------------
-    # Check for explicit bot-forcing phrases
-    forced_bot = any(phrase in user_lower for phrase in FORCE_BOT_PHRASES)
+    # Translate slang for AI understanding (internal only)
+    translated_message = translate_slang(user_message)
 
-    # Check for insult keywords
+    # Advanced annoyed detection with sentiment analysis
+    forced_bot = any(phrase in user_lower for phrase in FORCE_BOT_PHRASES)
     keyword_insult = any(keyword in user_lower for keyword in INSULT_KEYWORDS)
 
-    # Sentiment analysis for negative tone
     try:
         sentiment_score = sentiment_analyzer.polarity_scores(user_message)["compound"]
-        negative_sentiment = sentiment_score < -0.5  # More strict threshold
+        negative_sentiment = sentiment_score < -0.5
     except:
         negative_sentiment = False
 
-    # Additional aggressive patterns
     aggressive_patterns = ["shut up", "stfu", "fuck you", "hate you", "go away", "leave me alone", "stop talking"]
     aggressive_detected = any(pattern in user_lower for pattern in aggressive_patterns)
 
-    # Combine all annoyed triggers
     forced_annoyed = forced_bot or keyword_insult or (negative_sentiment and keyword_insult) or aggressive_detected
 
-    # -----------------------------
     # Determine tone
-    # -----------------------------
     if forced_annoyed:
         tone = "annoyed"
     else:
-        # Special user always gets flirty
         if is_special_user:
             tone = "flirty"
         else:
-            # Normal behavior: 95/100 bestie, 5/100 flirty, avoid repeated flirty if just used
             if last_tone == "flirty":
                 tone = "bestie"
             else:
                 tone = "flirty" if random.random() < 0.05 else "bestie"
 
-    # -----------------------------
-    # Update history
-    # -----------------------------
-    history.append({"role": "user", "content": user_message})
+    # Update history (use translated message for AI)
+    history.append({"role": "user", "content": translated_message})
     history = history[-MAX_HISTORY:]
     user_histories[user_id] = history
 
-    # -----------------------------
     # Build conversation with dynamic tone instruction
-    # -----------------------------
     system_tone_instruction = ""
     if tone == "annoyed":
         system_tone_instruction = (
@@ -217,37 +437,29 @@ def generate_ai_reply(user_id: int, user_message: str, is_special_user: bool = F
 
     conversation = [{"role": "system", "content": SYSTEM_PROMPT + system_tone_instruction}] + history
 
-    # -----------------------------
     # Generate response
-    # -----------------------------
     try:
         response = hf_client.chat_completion(
             messages=conversation,
             model="meta-llama/Llama-3.2-3B-Instruct",
             temperature=0.7,
-            max_tokens=60,  # short replies, ~1-2 sentences
+            max_tokens=60,
             top_p=0.9
         )
 
         reply_text = response.choices[0].message.content.strip()
 
-        # -----------------------------
         # Apply tone-specific emoji rules with proper probability
-        # -----------------------------
         is_flirty_mode = (tone == "flirty")
 
         if tone == "annoyed":
-            # Annoyed gets one of these emojis with 30% chance
             annoyed_emojis = ["😒", "💀", "😭", "🙄"]
             if random.random() < EMOJI_PROBABILITY_BESTIE:
                 reply_text += " " + random.choice(annoyed_emojis)
         else:
-            # Use the stochastic emoji function with appropriate probability
             reply_text = maybe_add_emoji(reply_text, is_flirty=is_flirty_mode)
 
-        # -----------------------------
         # Save reply and tone
-        # -----------------------------
         user_histories[user_id].append({"role": "assistant", "content": reply_text})
         user_last_tone[user_id] = tone
 
@@ -260,12 +472,10 @@ def generate_ai_reply(user_id: int, user_message: str, is_special_user: bool = F
 
 def get_time_greeting(is_special_user: bool = False):
     """Generate time-based greetings with updated time ranges - romantic for special user, 5% for others"""
-    # Use US Eastern timezone
     eastern = pytz.timezone('US/Eastern')
     now = datetime.now(eastern)
     hour = now.hour
 
-    # Determine if this should be romantic (100% for special user, 5% for others)
     use_romantic = is_special_user or (random.random() < 0.05)
 
     if 6 <= hour < 11:
@@ -644,11 +854,12 @@ def get_response(user_input: str) -> str:
 **📝 Standardized Tests**
 `!sat` • `!act`
 
-**Functions:**
-Type `!help` or `hi abg tutor` to see what I can do!
-Type `goodbye abg tutor` to stop.
+**how to use me:**
+• `!help` = see all resources
+• `!hi abg` = start chatting
+• `!goodbye` = end conversation
 
-Type any command above and I'll send you resources! 💕"""
+type any command above for resources! 💕"""
 
     elif lowered.startswith('!'):
         return 'i don\'t understand that fr 😭 type `!help` to see what i can do!'
@@ -669,7 +880,7 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
     # Get current time info
     eastern = pytz.timezone('US/Eastern')
     now = datetime.now(eastern)
-    current_day = now.strftime('%A')  # Full day name like "Monday"
+    current_day = now.strftime('%A')
 
     # Update conversation tracking
     detect_subjects_and_update(user_id, user_input)
@@ -677,8 +888,8 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
     if stress:
         update_user_memory(user_id, 'stress_level', stress)
 
-    # Goodbye - CHECK THIS FIRST (expanded responses)
-    if 'goodbye abg tutor' in lowered or 'abg tutor goodbye' in lowered:
+    # Goodbye - CHECK THIS FIRST (UPDATED: !goodbye or !good bye only, now clingy)
+    if lowered == '!goodbye' or lowered == '!good bye':
         if user_id in conversation_active:
             del conversation_active[user_id]
         # Clear AI history for this user
@@ -686,23 +897,34 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
             del user_histories[user_id]
         if user_id in user_last_tone:
             del user_last_tone[user_id]
-        return random.choice([
-            'bye! good luck with your studies! 💕',
-            'see you! come back if you need help 😊',
-            'later! happy studying ❤️',
-            'goodbye! you got this! 💪',
-            'peace out! good luck 🫶',
-            'bye bestie! catch you later 💕',
-            'see ya! keep grinding 😌',
-            'later! stay awesome 💖',
-            'goodbye! rooting for you fr 💪',
-            'bye! you\'re gonna crush it 🔥',
-            'see you around! keep it up 💯',
-            'peace! come back anytime 💕',
-            'later gator! stay cool 😎',
-            'bye bye! take care 💖',
-            'catch you later! good vibes only ✨',
-        ])
+
+        # Romantic/clingy responses for special user or 5% chance
+        if is_special_user or random.random() < 0.05:
+            return random.choice([
+                'wait already? 🥺💕 text me back soon ok?',
+                'aww leaving so soon babe? 😭 come back whenever you want 💖',
+                'noo don\'t go yet 🥺💞 but ok... text me later?',
+                'you\'re leaving? 😭💕 i\'ll miss you, come back soon!',
+                'wait come back 🥺 jk but fr text me anytime 💖',
+                'leaving already cutie? 😭 promise you\'ll come back? 💕',
+                'aww ok bye babe 🥺💖 but like... text me later ok?',
+                'noo stay longer 😭💕 fine but you better come back',
+                'you\'re really going? 🥺 ok but text me soon i\'ll miss you 💖',
+                'wait no 😭💞 ok fine... but come back soon babe',
+            ])
+        else:
+            return random.choice([
+                'wait already? 🥺 text me back soon ok?',
+                'aww leaving so soon? 😭 come back whenever!',
+                'noo don\'t go yet 🥺 but ok... text me later?',
+                'you\'re leaving? 😭 i\'ll miss you, come back soon!',
+                'wait come back 🥺 jk but fr text me anytime',
+                'leaving already? 😭 promise you\'ll come back?',
+                'aww ok bye 🥺 but like... text me later ok?',
+                'noo stay longer 😭 fine but you better come back',
+                'you\'re really going? 🥺 ok but text me soon bestie',
+                'wait no 😭 ok fine... but come back soon',
+            ])
 
     # Bot detection - act offended
     if any(phrase in lowered for phrase in ['are you a bot', 'are you ai', 'you a bot', 'ur a bot', 'you\'re a bot', 'are u a bot', 'r u a bot']):
@@ -751,7 +973,7 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
 
     # What time is it / time related questions
     if any(phrase in lowered for phrase in ['what time is it', 'what time', 'time is it', 'what\'s the time', 'whats the time', 'current time']):
-        current_time = now.strftime('%-I:%M %p')  # Format: 3:12 PM
+        current_time = now.strftime('%-I:%M %p')
         if is_special_user or random.random() < 0.05:
             return random.choice([
                 f'it\'s {current_time} babe! 💕',
@@ -764,19 +986,15 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
             f'currently {current_time} fr',
         ])
 
-    # Greetings with time-based responses (ONLY if not in active conversation via AI)
-    # Skip this check if we're going to use AI anyway
+    # Greetings with time-based responses
     in_active_ai_conversation = user_id in user_histories and len(user_histories[user_id]) > 0
 
-    # Check for "good morning" / "good night" / "good afternoon" / "good evening" as greetings FIRST
     if any(phrase in lowered for phrase in ['good morning', 'good afternoon', 'good evening', 'good night', 'goodnight', 'gn', 'gm']):
         if not in_active_ai_conversation:
-            # Starting conversation with time-based greeting
             subjects = get_user_memory(user_id, 'subjects', [])
 
             if subjects and random.random() < 0.3:
                 subject = random.choice(subjects)
-                # Romantic subject-based response (100% special user, 5% others)
                 if is_special_user or random.random() < 0.05:
                     return random.choice([
                         f'hey cutie! 💕 how\'s {subject} going?',
@@ -791,7 +1009,6 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
                     ])
             return get_time_greeting(is_special_user)
         else:
-            # In conversation, respond to the greeting naturally
             if is_special_user or random.random() < 0.05:
                 return random.choice([
                     'hey babe! 💕 what\'s up?',
@@ -805,12 +1022,10 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
             ])
 
     if not in_active_ai_conversation and any(phrase in lowered for phrase in ['hi', 'hey', 'hello', 'sup', 'yo', 'wassup', 'what\'s up', 'howdy', 'hii', 'heyy']):
-        # Check for returning user with subjects
         subjects = get_user_memory(user_id, 'subjects', [])
 
         if subjects and random.random() < 0.3:
             subject = random.choice(subjects)
-            # Romantic subject-based response (100% special user, 5% others)
             if is_special_user or random.random() < 0.05:
                 return random.choice([
                     f'hey cutie! 💕 how\'s {subject} going?',
@@ -865,7 +1080,7 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
         if is_special_user:
             return random.choice(romantic_responses)
         else:
-            if random.random() < 0.05:  # 5/100 chance
+            if random.random() < 0.05:
                 return random.choice(romantic_responses)
             else:
                 return random.choice(friendly_responses)
@@ -979,7 +1194,7 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
                 'listen babe 💕 u got this, i literally believe in ur brain so much 💖',
                 'nah stop that rn 😭 you\'re literally capable of so much cutie',
                 'ugh don\'t make me give u a pep talk 💀 you\'re amazing fr 💕',
-                'babe you\'ve come this far, don\'t give up now 💪💖 i\'m here for you',
+            'babe you\'ve come this far, don\'t give up now 💪💖 i\'m here for you',
             ])
         return random.choice([
             'listen babe 💕 u got this, i literally believe in ur brain 💖',
@@ -1006,11 +1221,10 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
             'i\'m vibing lol, how are you?',
         ])
 
-    # Good/fine responses (but NOT if it's "good morning/night/etc")
+    # Good/fine responses
     if any(word in lowered for word in ['good', 'fine', 'great', 'awesome', 'nice', 'cool', 'amazing']):
-        # Skip if it's a greeting phrase
         if any(phrase in lowered for phrase in ['good morning', 'good afternoon', 'good evening', 'good night', 'goodnight']):
-            pass  # Will be handled by AI or other handlers
+            pass
         else:
             if is_special_user or random.random() < 0.05:
                 return random.choice([
@@ -1099,7 +1313,6 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
     # Try AI first if limit not reached
     if not ai_limit_reached:
         try:
-            # Use the improved AI generation with context
             ai_response = generate_ai_reply(user_id, user_input, is_special_user)
             if ai_response:
                 return ai_response
@@ -1108,7 +1321,6 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
             error_msg = str(e)
             print(f"AI Error: {error_msg}")
 
-            # Check if it's a rate limit error
             if "rate limit" in error_msg.lower() or "429" in error_msg:
                 ai_limit_reached = True
                 if not ai_limit_notified:
@@ -1141,15 +1353,25 @@ async def on_message(message: Message) -> None:
     contains_abg_tutor = 'abg tutor' in lowered_content
     is_mentioned = client.user.mentioned_in(message)
 
+    # Send welcome message to new users (first-time DM)
+    if is_dm and user_id not in welcomed_users:
+        welcomed_users.add(user_id)
+        await message.channel.send(NEW_USER_WELCOME)
+        return
+
     # Handle ! commands FIRST (these work without mentioning abg tutor)
     if message.content.startswith('!'):
         if message.content.strip() == '!':
             return
 
-        response = get_response(message.content)
-        if response:
-            await message.reply(response, mention_author=False)
-        return
+        # Let !hi abg and !hiabg pass through to conversation logic
+        if lowered_content in ['!hi abg', '!hiabg']:
+            pass  # Don't return, let it continue to conversation starter
+        else:
+            response = get_response(message.content)
+            if response:
+                await message.reply(response, mention_author=False)
+            return
 
     # Check if user is in active conversation
     in_active_conversation = user_id in conversation_active and conversation_active[user_id]
@@ -1160,29 +1382,25 @@ async def on_message(message: Message) -> None:
             conversation_active[user_id] = True
             in_active_conversation = True
 
-    # "Second Start" - Full conversation mode triggers
-    greeting_phrases = [
-        'hi abg tutor', 'abg tutor hi'
+    # UPDATED: Only these exact variations start conversation
+    conversation_starters = [
+        '!hi abg',
+        '!hiabg',
     ]
 
-    is_greeting_trigger = any(phrase in lowered_content for phrase in greeting_phrases)
-    is_conversation_starter = is_greeting_trigger or is_mentioned
+    is_conversation_starter = any(lowered_content == starter for starter in conversation_starters) or (is_dm and not in_active_conversation)
 
     # Start full conversation mode
     if is_conversation_starter and not in_active_conversation:
         conversation_active[user_id] = True
-        user_input = message.content.replace(f'<@{client.user.id}>','').replace(f'<@!{client.user.id}>', '').strip()
 
-        if not user_input or user_input.lower() == 'abg tutor':
-            user_input = "hi"
+        # Use time-based greeting as the response
+        response = get_time_greeting(user_id == 561352123548172288)
 
-        response = get_conversation_response(user_input, user_id)
-
-        if response:
-            if is_dm:
-                await message.channel.send(response + CONVERSATION_START_MSG)
-            else:
-                await message.reply(response + CONVERSATION_START_MSG, mention_author=False)
+        if is_dm:
+            await message.channel.send(response + CONVERSATION_START_MSG)
+        else:
+            await message.reply(response + CONVERSATION_START_MSG, mention_author=False)
         return
 
     # Continue active conversation (no need to mention "abg tutor")
@@ -1197,7 +1415,7 @@ async def on_message(message: Message) -> None:
         return
 
     # "First Start" - One-off responses (only if "abg tutor" mentioned and NOT in conversation)
-    if contains_abg_tutor and not in_active_conversation:
+    if (contains_abg_tutor or is_mentioned) and not in_active_conversation:
         # Check for compliment phrases first
         compliment_phrases = [
             'i like abg tutor', 'i love abg tutor', 'love abg tutor', 'i luv abg tutor',
@@ -1236,7 +1454,7 @@ async def on_message(message: Message) -> None:
                 await message.add_reaction(random.choice(romantic_reactions))
                 response = random.choice(romantic_responses)
             else:
-                if random.random() < 0.05:  # 5/100 chance
+                if random.random() < 0.05:
                     await message.add_reaction(random.choice(romantic_reactions))
                     response = random.choice(romantic_responses)
                 else:
@@ -1246,7 +1464,7 @@ async def on_message(message: Message) -> None:
             await message.reply(response, mention_author=False)
             return
 
-        # Not a compliment, but contains "abg tutor" - give one-off response
+        # Not a compliment, but contains "abg tutor" or mentioned - give one-off response
         user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
         response = get_conversation_response(user_input, user_id)
 
