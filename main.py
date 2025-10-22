@@ -1423,7 +1423,7 @@ async def on_message(message: Message) -> None:
         return
 
     # "First Start" - One-off responses (only if "abg tutor" mentioned and NOT in conversation)
-    if (contains_abg_tutor or is_mentioned) and not in_active_conversation:
+if (contains_abg_tutor or is_mentioned) and not in_active_conversation:
     user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
     
     # For one-off questions, use AI directly to comprehend and respond naturally
