@@ -1424,6 +1424,28 @@ async def on_message(message: Message) -> None:
 
     # "First Start" - One-off responses (only if "abg tutor" mentioned and NOT in conversation)
     if (contains_abg_tutor or is_mentioned) and not in_active_conversation:
+    user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
+    
+    # For one-off questions, use AI directly to comprehend and respond naturally
+    if not ai_limit_reached:
+        try:
+            ai_response = generate_ai_reply(user_id, user_input, is_special_user)
+            if ai_response:
+                await message.reply(ai_response, mention_author=False)
+                # Clear history after one-off response so it doesn't persist
+                if user_id in user_histories:
+                    del user_histories[user_id]
+                if user_id in user_last_tone:
+                    del user_last_tone[user_id]
+                return
+        except Exception as e:
+            print(f"AI Error for one-off: {e}")
+    
+    # Only use keyword fallbacks if AI completely fails
+    response = get_conversation_response(user_input, user_id)
+    if response:
+        await message.reply(response, mention_author=False)
+    return
         # Check for compliment phrases first
         compliment_phrases = [
             'i like abg tutor', 'i love abg tutor', 'love abg tutor', 'i luv abg tutor',
