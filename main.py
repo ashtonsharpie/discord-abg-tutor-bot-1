@@ -1471,9 +1471,13 @@ async def on_message(message: Message) -> None:
     
             await message.reply(response, mention_author=False)
             return
-    
-        # Not a compliment - use AI to comprehend and respond naturally
+            
+            # Not a compliment - use AI to comprehend and respond naturally
         user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
+        
+        # Define special user for AI
+        special_person_id = 561352123548172288
+        is_special_user = message.author.id == special_person_id
         
         # For one-off questions, use AI directly to comprehend and respond naturally
         if not ai_limit_reached:
@@ -1495,7 +1499,6 @@ async def on_message(message: Message) -> None:
         if response:
             await message.reply(response, mention_author=False)
         return
-
 
 def main() -> None:
     client.run(token=TOKEN)
