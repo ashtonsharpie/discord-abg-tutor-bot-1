@@ -52,7 +52,7 @@ ai_limit_notified = False
 user_memory = {}
 
 # Conversation start message
-CONVERSATION_START_MSG = "\n*(Only starts conversation when you type `hi abg tutor`. Type `goodbye` to end)*"
+CONVERSATION_START_MSG = "\n*(Only starts conversation when you type `hi abg tutor`. Type `goodbye abg tutor` to end)*"
 
 # Store conversation history per user for AI
 user_histories = {}
@@ -646,7 +646,7 @@ def get_response(user_input: str) -> str:
 
 **Functions:**
 Type `!help` or `hi abg tutor` to see what I can do!
-Type `goodbye` to stop.
+Type `goodbye abg tutor` to stop.
 
 Type any command above and I'll send you resources! 💕"""
 
@@ -678,7 +678,7 @@ def get_conversation_response(user_input: str, user_id: int) -> str:
         update_user_memory(user_id, 'stress_level', stress)
 
     # Goodbye - CHECK THIS FIRST (expanded responses)
-    if lowered.strip() == 'goodbye':
+    if 'goodbye abg tutor' in lowered or 'abg tutor goodbye' in lowered:
         if user_id in conversation_active:
             del conversation_active[user_id]
         # Clear AI history for this user
@@ -1162,43 +1162,7 @@ async def on_message(message: Message) -> None:
 
     # "Second Start" - Full conversation mode triggers
     greeting_phrases = [
-        'hi abg tutor', 'hey abg tutor', 'hello abg tutor', 'sup abg tutor',
-        'yo abg tutor', 'wassup abg tutor', 'what\'s up abg tutor',
-        'howdy abg tutor', 'greetings abg tutor', 'how are you abg tutor',
-        'abg tutor hi', 'abg tutor hey', 'abg tutor hello', 'abg tutor sup',
-        'abg tutor yo', 'abg tutor wassup', 'abg tutor what\'s up',
-        'abg tutor howdy', 'abg tutor how are you', 'abg tutor greetings',
-        # Variations with extra letters
-        'hii abg tutor', 'hiii abg tutor', 'hiiii abg tutor',
-        'heyy abg tutor', 'heyyy abg tutor', 'heyyyy abg tutor',
-        'helloo abg tutor', 'hellooo abg tutor',
-        'yoo abg tutor', 'yooo abg tutor',
-        'supp abg tutor', 'suppp abg tutor',
-        'abg tutor hii', 'abg tutor hiii', 'abg tutor hiiii',
-        'abg tutor heyy', 'abg tutor heyyy', 'abg tutor heyyyy',
-        'abg tutor helloo', 'abg tutor hellooo',
-        'abg tutor yoo', 'abg tutor yooo',
-        'abg tutor supp', 'abg tutor suppp',
-        # Common variations
-        'whats up abg tutor', 'abg tutor whats up',
-        'what up abg tutor', 'abg tutor what up',
-        'wsg abg tutor', 'abg tutor wsg',  # what's good
-        'wsup abg tutor', 'abg tutor wsup',
-        'heya abg tutor', 'abg tutor heya',
-        'hiya abg tutor', 'abg tutor hiya',
-        'ayo abg tutor', 'abg tutor ayo',
-        'hay abg tutor', 'abg tutor hay',
-        'hola abg tutor', 'abg tutor hola',
-        'morning abg tutor', 'abg tutor morning',
-        'good morning abg tutor', 'abg tutor good morning',
-        'evening abg tutor', 'abg tutor evening',
-        'good evening abg tutor', 'abg tutor good evening',
-        'afternoon abg tutor', 'abg tutor afternoon',
-        'good afternoon abg tutor', 'abg tutor good afternoon',
-        'night abg tutor', 'abg tutor night',
-        'good night abg tutor', 'abg tutor good night',
-        'gm abg tutor', 'abg tutor gm',
-        'gn abg tutor', 'abg tutor gn',
+        'hi abg tutor', 'abg tutor hi'
     ]
 
     is_greeting_trigger = any(phrase in lowered_content for phrase in greeting_phrases)
