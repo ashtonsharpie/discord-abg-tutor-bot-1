@@ -52,7 +52,7 @@ ai_limit_notified = False
 user_memory = {}
 
 # Conversation start message
-CONVERSATION_START_MSG = "\n*(Only starts conversation when you mention abg tutor. Type goodbye to end)*"
+CONVERSATION_START_MSG = "\n*(Only starts conversation when you type hi abg tutor. Type goodbye to end)*"
 
 # Store conversation history per user for AI
 user_histories = {}
