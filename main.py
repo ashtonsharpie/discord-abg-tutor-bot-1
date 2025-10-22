@@ -52,7 +52,7 @@ ai_limit_notified = False
 user_memory = {}
 
 # Conversation start message
-CONVERSATION_START_MSG = "\n*(Only starts conversation when you type hi abg tutor. Type goodbye to end)*"
+CONVERSATION_START_MSG = "\n*(Only starts conversation when you type `hi abg tutor`. Type `goodbye` to end)*"
 
 # Store conversation history per user for AI
 user_histories = {}
@@ -645,7 +645,7 @@ def get_response(user_input: str) -> str:
 `!sat` • `!act`
 
 **Functions:**
-Type `!help` or mention my name (abg tutor) to see what I can do!
+Type `!help` or `hi abg tutor` to see what I can do!
 Type `goodbye` to stop.
 
 Type any command above and I'll send you resources! 💕"""
