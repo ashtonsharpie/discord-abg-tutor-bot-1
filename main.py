@@ -1363,9 +1363,9 @@ async def on_message(message: Message) -> None:
     if message.content.startswith('!'):
         if message.content.strip() == '!':
             return
-
-        # Let !hi abg and !hiabg pass through to conversation logic
-        if lowered_content in ['!hi abg', '!hiabg']:
+        
+        # Let !hi abg, !hiabg, !goodbye, and !good bye pass through to conversation logic
+        if lowered_content in ['!hi abg', '!hiabg', '!goodbye', '!good bye']:
             pass  # Don't return, let it continue to conversation starter
         else:
             response = get_response(message.content)
