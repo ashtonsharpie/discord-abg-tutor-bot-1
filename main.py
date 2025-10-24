@@ -27,6 +27,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
         self.end_headers()
+    
+    def log_message(self, format, *args):
+        pass  # Suppress HTTP logs
 
 def run_server():
     server = HTTPServer(("", PORT), Handler)
@@ -61,7 +64,7 @@ NEW_USER_WELCOME = """hey! welcome 💕 i'm abg tutor, here to help you with APs
 **how to use me:**
 • `!help` = see all my study resources
 • `!hi abg` = start chatting with me
-• `!goodbye` = end conversation
+• `!bye abg` = end conversation
 • `!bestie` = friendly study mode
 • `!flirty` = flirty study mode (1% chance)
 
@@ -69,8 +72,8 @@ NEW_USER_WELCOME = """hey! welcome 💕 i'm abg tutor, here to help you with APs
 
 type `!help` to see resources, or say `!hi abg` to start chatting! 😊"""
 
-CONVERSATION_START_MSG = "\n*(conversation started! type `!goodbye` to end)*"
-TEACHING_START_MSG = "\n*(teaching started! type `!stop teaching` to end)*"
+CONVERSATION_START_MSG = "\n*(conversation started! type `!bye abg` to end)*"
+TEACHING_START_MSG = "\n*(teaching started! type `!stop teaching` to exit)*"
 
 GOODBYE_MESSAGES_BESTIE = [
     "wait already? 🥺 text me back soon ok?",
@@ -100,8 +103,8 @@ NICKNAME_PROBABILITY = 0.15
 # Emojis for different contexts
 EMOJIS_CASUAL = ["💕", "😊", "✨", "💖", "🥺", "😭", "💗", "🫶", "💞", "😌"]
 EMOJIS_TEACHING = ["📚", "✨", "💡", "🎯", "💪", "🔥", "⭐", "👍", "📝", "🧠"]
-EMOJIS_FLIRTY = ["💕", "😘", "💖", "😏", "✨", "💗", "😍", "🥰", "💋", "😉"]
-EMOJI_PROBABILITY = 0.5  # 50% chance to add emoji
+EMOJIS_FLIRTY = ["💕", "😘", "💖", "😏", "✨", "💗", "😍", "🥰", "💋", "😉", "😈", "🥵", "🫦", "👀"]
+EMOJI_PROBABILITY = 0.5
 
 def solve_math_problem(problem_text: str) -> tuple:
     """Solves math problems and returns (text_solution, has_math)"""
@@ -153,12 +156,6 @@ def solve_math_problem(problem_text: str) -> tuple:
             result = simplify(expr)
 
             return (f"{expr} = {result}", True)
-
-        elif any(chem in problem_text for chem in ['stoichiometry', 'mole', 'mol', 'h2o', 'co2', 'nacl', 'chemical equation', 'balance']):
-            return (None, False)
-
-        elif any(phys in problem_text for phys in ['velocity', 'acceleration', 'force', 'energy', 'momentum', 'f=ma', 'kinetic', 'potential']):
-            return (None, False)
 
         return (None, False)
 
@@ -307,11 +304,7 @@ Use emojis occasionally but LIMIT TO ONLY ONE EMOJI PER MESSAGE. Don't overdo it
 
 CRITICAL CONTEXT UNDERSTANDING:
 - Before responding, understand the CONTEXT of what the user is asking
-- "teach me how to rizz" = casual flirting advice (NOT academic)
-- "explain photosynthesis" = academic teaching (biology)
-- "solve x^2 + 5x + 6 = 0" = math problem solving (academic)
-- "how do i bag you" = flirty banter (NOT academic)
-- Always determine: Is this ACADEMIC or CASUAL/SOCIAL?
+- Determine: Is this ACADEMIC or CASUAL/SOCIAL?
 - Respond appropriately based on that determination"""
 
     subject_instruction = ""
@@ -323,7 +316,6 @@ CRITICAL CONTEXT UNDERSTANDING:
 - Explain grammar concepts clearly
 - Help with conjugations, vocabulary, and pronunciation
 - Use accents correctly (é, è, ê, à, ù, ç, etc.)
-- Example format: "so 'je voudrais' means 'i would like' - it's the conditional form of vouloir"
 """
     elif subject == 'spanish':
         subject_instruction = """
@@ -333,7 +325,6 @@ CRITICAL CONTEXT UNDERSTANDING:
 - Explain grammar concepts clearly
 - Help with conjugations, vocabulary, and pronunciation
 - Use proper Spanish characters (á, é, í, ó, ú, ñ, ¿, ¡)
-- Example format: "so 'me gustaría' means 'i would like' - it's a polite way to express desires"
 """
     elif subject == 'chinese':
         subject_instruction = """
@@ -342,7 +333,6 @@ CRITICAL CONTEXT UNDERSTANDING:
 - Provide Chinese, pinyin, and English translations
 - Explain tones and pronunciation
 - Help with characters, grammar, and sentence structure
-- Example format: "so '我想要' (wǒ xiǎng yào) means 'i want' - 想 is third tone, 要 is fourth tone"
 """
     elif subject in ['calculus', 'algebra', 'statistics']:
         subject_instruction = """
@@ -350,7 +340,6 @@ CRITICAL CONTEXT UNDERSTANDING:
 - Show your work step-by-step
 - Use mathematical notation when helpful
 - Explain WHY each step is taken, not just HOW
-- Example: "first, we factor out the common term. x² + 5x + 6 = (x + 2)(x + 3)"
 """
     elif subject == 'chemistry':
         subject_instruction = """
@@ -359,7 +348,6 @@ CRITICAL CONTEXT UNDERSTANDING:
 - Show balanced equations
 - Explain stoichiometry step-by-step with mole ratios
 - Use proper chemical terminology
-- Example: "2H₂ + O₂ → 2H₂O means 2 moles of hydrogen react with 1 mole of oxygen"
 """
     elif subject == 'physics':
         subject_instruction = """
@@ -367,16 +355,13 @@ CRITICAL CONTEXT UNDERSTANDING:
 - Use proper physics notation and units
 - Show equations and explain each variable
 - Break down problem-solving into steps
-- Example: "F = ma, so if m = 5kg and a = 2m/s², then F = 10N"
 """
     elif subject == 'biology':
         subject_instruction = """
 🧬 BIOLOGY MODE:
 - Use proper biological terminology
 - Explain processes step-by-step
-- Use diagrams descriptions when helpful
 - Connect concepts to real-world examples
-- Example: "photosynthesis is basically plants making food from sunlight - they convert CO₂ + H₂O → glucose + O₂"
 """
 
     nickname_instruction = ""
@@ -385,9 +370,6 @@ CRITICAL CONTEXT UNDERSTANDING:
 FLIRTY MODE ACTIVE:
 - Occasionally use nicknames: {', '.join(NICKNAMES_FLIRTY)}
 - Be warm, playful, slightly flirtatious but NEVER sexual
-- When teaching: Use playful, attractive examples that relate to attraction/fitness/beauty (95% stay on topic)
-- Example: For biology - "active transport is like your muscles pumping blood when you work out - it takes energy but makes you stronger 💪"
-- Example: For chemistry - "think of ionic bonds like attraction - opposites attract and create something stable together"
 - Still focus on helping - don't let flirting overshadow learning
 - Keep it appropriate and supportive
 - Be subtly flirty, not over-the-top"""
@@ -409,7 +391,6 @@ BESTIE MODE ACTIVE:
 - Be patient but brief - 3-5 sentences MAX
 - Maintain your casual tone but be clear and organized
 - RESPONSE LENGTH: 3-5 sentences (keep explanations focused and concise)
-- Teaching mode continues until user naturally shifts conversation or says !stop teaching
 
 CASUAL CHAT: 1-3 sentences max
 TEACHING: 3-5 sentences for concise explanations with ONE example"""
@@ -432,12 +413,8 @@ CASUAL CONVERSATION MODE:
 4. If insulted, respond with mild annoyance but stay in character
 5. If asked for selfies/pics, playfully decline in character
 6. Respond naturally to greetings based on time of day
-7. ALWAYS determine context before responding:
-   - Is this academic or casual/social?
-   - Should I teach or chat?
-   - Is the user done learning (natural conversation shift)?
-8. For problem-solving: Show your work step by step
-9. Use proper notation for the subject (math symbols, chemical formulas, foreign language characters)"""
+7. For problem-solving: Show your work step by step
+8. Use proper notation for the subject (math symbols, chemical formulas, foreign language characters)"""
 
     return base_personality + subject_instruction + nickname_instruction + teaching_instruction + context_instruction + protection_rules
 
@@ -459,14 +436,13 @@ def maybe_add_nickname(reply_text: str, mode: str) -> str:
 
 def maybe_add_emoji(reply_text: str, mode: str, teaching_mode: bool) -> str:
     """Add emoji to reply text with 50% probability - max 1 emoji per message"""
-    # Check if reply already has ANY emoji (unicode emoji check)
     import re
     emoji_pattern = re.compile(
         "["
-        "\U0001F600-\U0001F64F"  # emoticons
-        "\U0001F300-\U0001F5FF"  # symbols & pictographs
-        "\U0001F680-\U0001F6FF"  # transport & map symbols
-        "\U0001F1E0-\U0001F1FF"  # flags
+        "\U0001F600-\U0001F64F"
+        "\U0001F300-\U0001F5FF"
+        "\U0001F680-\U0001F6FF"
+        "\U0001F1E0-\U0001F1FF"
         "\U00002702-\U000027B0"
         "\U000024C2-\U0001F251"
         "]+", 
@@ -474,10 +450,9 @@ def maybe_add_emoji(reply_text: str, mode: str, teaching_mode: bool) -> str:
     )
 
     if emoji_pattern.search(reply_text):
-        return reply_text  # Already has emoji, don't add more
+        return reply_text
 
     if random.random() < EMOJI_PROBABILITY:
-        # Choose emoji set based on context
         if mode == "flirty":
             emoji = random.choice(EMOJIS_FLIRTY)
         elif teaching_mode:
@@ -485,7 +460,6 @@ def maybe_add_emoji(reply_text: str, mode: str, teaching_mode: bool) -> str:
         else:
             emoji = random.choice(EMOJIS_CASUAL)
 
-        # Add emoji at the end
         reply_text = f"{reply_text} {emoji}"
 
     return reply_text
@@ -562,7 +536,6 @@ async def generate_ai_reply(user_id: int, user_message: str, force_context: str 
 
     subject = detect_subject(user_message)
 
-    # Try to solve math problems
     math_solution, has_math = solve_math_problem(user_lower)
 
     context_parts = []
@@ -596,6 +569,7 @@ async def generate_ai_reply(user_id: int, user_message: str, force_context: str 
 
     if forced_annoyed:
         combined_context = "User was rude/insulting - respond with mild annoyance but stay playful"
+        teaching_mode = False
 
     history.append({"role": "user", "content": user_message})
 
@@ -609,7 +583,6 @@ async def generate_ai_reply(user_id: int, user_message: str, force_context: str 
     try:
         max_tokens = 200 if teaching_mode else 100
 
-        # Add timeout wrapper - use run_in_executor for Python 3.8 compatibility
         loop = asyncio.get_event_loop()
         try:
             response = await asyncio.wait_for(
@@ -623,7 +596,7 @@ async def generate_ai_reply(user_id: int, user_message: str, force_context: str 
                         top_p=0.9
                     )
                 ),
-                timeout=15.0  # 15 second timeout
+                timeout=15.0
             )
         except asyncio.TimeoutError:
             print(f"AI API call timed out for user {user_id}")
@@ -644,9 +617,8 @@ async def generate_ai_reply(user_id: int, user_message: str, force_context: str 
         error_str = str(e)
         print(f"AI Generation Error: {error_str}")
 
-        # Check if it's a rate limit error
         if "rate limit" in error_str.lower() or "429" in error_str or "quota" in error_str.lower():
-            raise Exception("RATE_LIMIT")  # Re-raise to be caught by on_message
+            raise Exception("RATE_LIMIT")
 
         return (None, False)
 
@@ -862,7 +834,7 @@ def get_response(user_input: str) -> str:
 **how to use me:**
 • `!help` = see all resources
 • `!hi abg` = start chatting (i can teach you concepts!)
-• `!goodbye` = end conversation
+• `!bye abg` = end conversation
 • `!stop teaching` = exit teaching mode
 
 **i can also teach you!** just ask me to explain any concept and i'll break it down for you 💕
@@ -892,6 +864,7 @@ async def on_message(message: Message) -> None:
     contains_abg_tutor = 'abg tutor' in lowered_content
     is_mentioned = client.user.mentioned_in(message)
 
+    # Welcome new users
     if user_id not in welcomed_users and (is_dm or contains_abg_tutor or is_mentioned):
         welcomed_users.add(user_id)
         if is_dm:
@@ -903,35 +876,47 @@ async def on_message(message: Message) -> None:
                 await message.reply(NEW_USER_WELCOME, mention_author=False)
         return
 
+    # Mode selection commands
     if lowered_content == '!bestie':
         actual_mode = set_user_mode(user_id, "bestie")
-        conversation_active[user_id] = True  # Start conversation
+        conversation_active[user_id] = True
 
-        response, _ = await generate_ai_reply(user_id, "user just selected bestie mode", "User selected bestie mode - confirm it's activated and be encouraging")
-        if response:
-            await message.reply(response + CONVERSATION_START_MSG, mention_author=False)
-        else:
+        try:
+            response, _ = await generate_ai_reply(user_id, "user just selected bestie mode", "User selected bestie mode - confirm it's activated and be encouraging")
+            if response:
+                await message.reply(response + CONVERSATION_START_MSG, mention_author=False)
+            else:
+                await message.reply("bestie mode activated! 💕 let\'s study together fr" + CONVERSATION_START_MSG, mention_author=False)
+        except:
             await message.reply("bestie mode activated! 💕 let\'s study together fr" + CONVERSATION_START_MSG, mention_author=False)
         return
 
     if lowered_content == '!flirty':
         actual_mode = set_user_mode(user_id, "flirty")
-        conversation_active[user_id] = True  # Start conversation
+        conversation_active[user_id] = True
 
         if actual_mode == "flirty":
             context = "User selected flirty mode and it ACTIVATED (1% chance hit!) - be excited and flirty"
         else:
             context = "User selected flirty mode but it didn't activate (99% chance) - playfully tell them they'll stay besties for now"
-        response, _ = await generate_ai_reply(user_id, "user just selected flirty mode", context)
-        if response:
-            await message.reply(response + CONVERSATION_START_MSG, mention_author=False)
-        else:
+        
+        try:
+            response, _ = await generate_ai_reply(user_id, "user just selected flirty mode", context)
+            if response:
+                await message.reply(response + CONVERSATION_START_MSG, mention_author=False)
+            else:
+                if actual_mode == "flirty":
+                    await message.reply("flirty mode activated cutie! 💖 ready to study with me?" + CONVERSATION_START_MSG, mention_author=False)
+                else:
+                    await message.reply("tried flirty mode but we\'re staying besties for now 😌💕 (1% chance!)" + CONVERSATION_START_MSG, mention_author=False)
+        except:
             if actual_mode == "flirty":
                 await message.reply("flirty mode activated cutie! 💖 ready to study with me?" + CONVERSATION_START_MSG, mention_author=False)
             else:
                 await message.reply("tried flirty mode but we\'re staying besties for now 😌💕 (1% chance!)" + CONVERSATION_START_MSG, mention_author=False)
         return
 
+    # Stop teaching command
     if lowered_content == '!stop teaching':
         if is_teaching_mode(user_id):
             set_teaching_mode(user_id, False)
@@ -942,11 +927,13 @@ async def on_message(message: Message) -> None:
             await message.reply("you're not in teaching mode rn bestie!", mention_author=False)
         return
 
+    # Handle resource commands
     if message.content.startswith('!'):
         if message.content.strip() == '!':
             return
 
-        if lowered_content in ['!hi abg', '!hiabg', '!goodbye', '!good bye']:
+        # Let conversation commands pass through
+        if lowered_content in ['!hi abg', '!hiabg', '!bye abg', '!byeabg']:
             pass
         else:
             response = get_response(message.content)
@@ -954,21 +941,24 @@ async def on_message(message: Message) -> None:
                 await message.reply(response, mention_author=False)
             return
 
+    # Check if in active conversation
     in_active_conversation = user_id in conversation_active and conversation_active[user_id]
 
+    # DMs auto-start conversation
     if is_dm:
         if not in_active_conversation:
             conversation_active[user_id] = True
             in_active_conversation = True
 
+    # Conversation starters
     conversation_starters = ['!hi abg', '!hiabg']
     is_conversation_starter = any(lowered_content == starter for starter in conversation_starters) or (is_dm and not in_active_conversation)
 
+    # Start new conversation
     if is_conversation_starter and not in_active_conversation:
         conversation_active[user_id] = True
 
         try:
-            print(f"Starting conversation for user {user_id}")
             response, _ = await generate_ai_reply(
                 user_id, 
                 "user just started conversation", 
@@ -981,7 +971,6 @@ async def on_message(message: Message) -> None:
                 else:
                     await message.reply(response + CONVERSATION_START_MSG, mention_author=False)
             else:
-                # Fallback if AI returns None
                 mode = get_user_mode(user_id)
                 fallback = "hey! what's up?" if mode == "bestie" else "hey cutie! what's up? 💕"
                 if is_dm:
@@ -994,7 +983,6 @@ async def on_message(message: Message) -> None:
             error_str = str(e)
             print(f"Error starting conversation: {error_str}")
 
-            # If rate limit, inform user
             if "RATE_LIMIT" in error_str or "rate limit" in error_str.lower():
                 ai_limit_reached = True
                 if not ai_limit_notified:
@@ -1002,7 +990,6 @@ async def on_message(message: Message) -> None:
                     await message.reply("yo heads up! 😭 we hit the daily ai limit. type `!help` for resources tho! 💕", mention_author=False)
                     return
 
-            # Use fallback greeting on any error
             mode = get_user_mode(user_id)
             fallback = "hey! what's up?" if mode == "bestie" else "hey cutie! what's up? 💕"
             if is_dm:
@@ -1011,13 +998,16 @@ async def on_message(message: Message) -> None:
                 await message.reply(fallback + CONVERSATION_START_MSG, mention_author=False)
             return
 
-    if lowered_content == '!goodbye' or lowered_content == '!good bye':
+    # Handle goodbye
+    if lowered_content == '!bye abg' or lowered_content == '!byeabg':
         if user_id in conversation_active:
             del conversation_active[user_id]
         if user_id in user_histories:
             del user_histories[user_id]
         if user_id in user_last_tone:
             del user_last_tone[user_id]
+        if user_id in user_modes:
+            set_teaching_mode(user_id, False)
 
         mode = get_user_mode(user_id)
         goodbye_msg = random.choice(GOODBYE_MESSAGES_FLIRTY if mode == "flirty" else GOODBYE_MESSAGES_BESTIE)
@@ -1025,6 +1015,7 @@ async def on_message(message: Message) -> None:
         await message.reply(goodbye_msg, mention_author=False)
         return
 
+    # Continue active conversation
     if in_active_conversation:
         if not ai_limit_reached:
             try:
@@ -1057,16 +1048,13 @@ async def on_message(message: Message) -> None:
             await message.reply(fallback, mention_author=False)
         return
 
+    # One-off mentions
     if (contains_abg_tutor or is_mentioned) and not in_active_conversation:
         user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
-
-        # Remove "abg tutor" from the message
         user_input_cleaned = user_input.lower().replace('abg tutor', '').strip()
 
-        # If there's actual content after removing "abg tutor", try to respond
         if user_input_cleaned and not ai_limit_reached:
             try:
-                print(f"One-off message from user {user_id}: '{user_input_cleaned}'")
                 response, _ = await generate_ai_reply(
                     user_id, 
                     user_input_cleaned, 
@@ -1074,7 +1062,6 @@ async def on_message(message: Message) -> None:
                 )
                 if response:
                     await send_long_message(message, response, False)
-                    # Clear history after one-off response
                     if user_id in user_histories:
                         del user_histories[user_id]
                     if user_id in user_last_tone:
@@ -1084,15 +1071,13 @@ async def on_message(message: Message) -> None:
                 error_str = str(e)
                 print(f"AI Error for one-off: {error_str}")
 
-                # If it's a rate limit, set the flag
                 if "RATE_LIMIT" in error_str or "rate limit" in error_str.lower():
                     ai_limit_reached = True
                     if not ai_limit_notified:
                         ai_limit_notified = True
-                        await message.reply("yo heads up! 😭 we hit the daily ai limit so responses might be slower. type `!help` for resources tho! 💕", mention_author=False)
+                        await message.reply("yo heads up! 😭 we hit the daily ai limit. type `!help` for resources tho! 💕", mention_author=False)
                         return
 
-        # Default response if no content or AI failed
         await message.reply("hey! wanna start a conversation? type `!hi abg` or check `!help` for study resources! 💕", mention_author=False)
         return
 
