@@ -1,3 +1,6 @@
+import sys
+sys.stdout.reconfigure(line_buffering=True)
+
 from typing import Final
 import os
 import random
@@ -954,15 +957,27 @@ type any command above for resources! 💕"""
 @client.event
 async def on_ready() -> None:
     print(f'{client.user} is now running!')
+    sys.stdout.flush()  # Force flush
 
 @client.event
 async def on_message(message: Message) -> None:
     global ai_limit_reached, ai_limit_notified
 
+    print(f"[DEBUG] Message received: '{message.content[:50]}'")
+    sys.stdout.flush()
+
     if message.author == client.user:
         return
 
     lowered_content = message.content.lower()
+    user_id = message.author.id
+    is_dm = isinstance(message.channel, DMChannel)
+    contains_abg_tutor = 'abg tutor' in lowered_content
+    is_mentioned = client.user.mentioned_in(message)
+
+    print(f"[DEBUG] abg_tutor={contains_abg_tutor}, mentioned={is_mentioned}")
+    sys.stdout.flush()
+
     user_id = message.author.id
     is_dm = isinstance(message.channel, DMChannel)
     contains_abg_tutor = 'abg tutor' in lowered_content
