@@ -1183,25 +1183,35 @@ async def on_message(message: Message) -> None:
         # If there's actual content, give ONE AI response (no conversation mode)
         if user_input_cleaned and not ai_limit_reached:
             try:
+                print(f"[DEBUG] One-off mention from user {user_id}: '{user_input_cleaned}'")  # ADD THIS
+                print(f"[DEBUG] Calling AI for one-off response...")  # ADD THIS
+
                 # Generate ONE response without activating conversation mode
                 response, _ = await generate_ai_reply(
                     user_id, 
                     user_input_cleaned, 
                     "This is a ONE-OFF mention, not a conversation. Give a brief, helpful response. Tell them to type `!hi abg` if they want to continue chatting."
                 )
+
+                print(f"[DEBUG] One-off AI response: {response}")  # ADD THIS
+
                 if response:
                     # Add guidance to start proper conversation
                     response += "\n*(wanna keep chatting? type `!hi abg`!)*"
                     await message.reply(response, mention_author=False)
                     return
+                else:
+                    print(f"[DEBUG] One-off response was None, using fallback")  # ADD THIS
+
             except Exception as e:
                 error_str = str(e)
-                print(f"AI Error for one-off mention: {error_str}")
+                print(f"[ERROR] AI Error for one-off mention: {error_str}")
 
                 if "RATE_LIMIT" in error_str or "rate limit" in error_str.lower():
                     ai_limit_reached = True
 
         # Fallback for mentions without content or when AI fails
+        print(f"[DEBUG] Using fallback message for one-off mention")  # ADD THIS
         await message.reply("hey! type `!hi abg` to chat or `!help` for study resources! 💕", mention_author=False)
         return
 
