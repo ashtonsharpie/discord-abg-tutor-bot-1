@@ -27,7 +27,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
         self.end_headers()
-    
+
     def log_message(self, format, *args):
         pass  # Suppress HTTP logs
 
@@ -105,6 +105,101 @@ EMOJIS_CASUAL = ["💕", "😊", "✨", "💖", "🥺", "😭", "💗", "🫶", 
 EMOJIS_TEACHING = ["📚", "✨", "💡", "🎯", "💪", "🔥", "⭐", "👍", "📝", "🧠"]
 EMOJIS_FLIRTY = ["💕", "😘", "💖", "😏", "✨", "💗", "😍", "🥰", "💋", "😉", "😈", "🥵", "🫦", "👀"]
 EMOJI_PROBABILITY = 0.5
+
+"""
+MESSAGE FLOW ARCHITECTURE:
+
+1. GIBBERISH DETECTION (First Wall - Rule-based)
+   - Checks for keyboard mashing, test patterns, no vowels
+   - Whitelists common short responses (y, k, fr, lol, etc.)
+   - Fast filter to avoid wasting AI tokens
+
+2. AI CONTEXT UNDERSTANDING (Second Wall - Smart)
+   - Determines: Academic vs Casual
+   - Decides: Teaching mode vs Chat mode
+   - Analyzes: Tone, sentiment, subject matter
+
+3. CONVERSATION MODES:
+   - ONE-OFF: Mention "abg tutor" → Single response + prompt to use !hi abg
+   - PERSISTENT: Use !hi abg → Full conversation with history
+   - DM: Auto-starts persistent conversation
+"""
+
+def is_gibberish(text: str) -> bool:
+    """Detect if message is likely gibberish/random keystrokes"""
+    text = text.strip().lower()
+
+    # Allow common short conversational responses
+    valid_short = [
+        'y', 'n', 'k', 'ok', 'no', 'hi', 'yo', 'sup', 'fr', 'lol', 'lmao',
+        'omg', 'wtf', 'tbh', 'ngl', 'idk', 'bruh', 'ugh', 'yea', 'nah',
+        'ya', 'ye', 'yep', 'nope', 'u', 'ur', 'r', 'y?', 'k?', 'fr?',
+        'lol?', 'omg?', 'wut', 'huh', 'hmm', 'oh', 'ah', 'oof', 'rip'
+    ]
+
+    # Remove common punctuation for checking
+    text_clean = text.replace('?', '').replace('!', '').replace('.', '').replace(',', '')
+
+    # If it's a valid short response, it's not gibberish
+    if text_clean in valid_short:
+        return False
+
+    # Check for common test patterns (longer ones)
+    gibberish_patterns = [
+        'asdf', 'qwer', 'zxcv', 'hjkl', 'sdfg', 'dfgh', 'fghj', 'jkl',
+        'test', 'testing', '123', 'abc', 'xyz', 'asd', 'qwe', 'zxc'
+    ]
+    if text_clean in gibberish_patterns:
+        return True
+
+    # Only flag very short messages if they have NO vowels and aren't numbers
+    if len(text_clean) <= 3:
+        vowels = 'aeiou'
+        has_vowel = any(char in vowels for char in text_clean)
+        is_number = text_clean.isdigit()
+        # If it's short, has no vowels, and isn't a number, might be gibberish
+        if not has_vowel and not is_number and len(text_clean) >= 2:
+            return True
+        return False
+
+    # Check vowel ratio for longer messages - real words usually have vowels
+    vowels = 'aeiou'
+    if len(text_clean) >= 4:
+        vowel_count = sum(1 for char in text_clean if char in vowels)
+        consonant_count = sum(1 for char in text_clean if char.isalpha() and char not in vowels)
+
+        # If very few vowels relative to consonants, likely gibberish
+        if consonant_count > 0 and vowel_count / len(text_clean) < 0.15:
+            return True
+
+    # Check for repeated characters (but allow some slang like "yesss" or "omgg")
+    if len(set(text_clean)) <= 2 and len(text_clean) >= 5:  # e.g., "aaaaa"
+        return True
+
+    return False
+
+
+def get_gibberish_response(mode: str) -> str:
+    """Return a playful response to gibberish"""
+    responses_bestie = [
+        "lol what? 😭 type something real bestie",
+        "bro i can't read that 💀 try again?",
+        "ok but like... what does that even mean? 😂",
+        "uh bestie? u good? wanna actually talk or just messing around?",
+        "nah fr tho what r u trying to say? 😭",
+        "bestie that's just keyboard smashing lmao 💀"
+    ]
+
+    responses_flirty = [
+        "lol cutie i can't understand that 😭 say something real?",
+        "babe what r u trying to tell me? 💕 use real words!",
+        "ok hon that's not a word 😂 try again?",
+        "sweetie i need actual words to help u 💖",
+        "lol what was that? 😘 type something i can understand!",
+        "cutie u just keyboard smashing or what? 😏"
+    ]
+
+    return random.choice(responses_flirty if mode == "flirty" else responses_bestie)
 
 def solve_math_problem(problem_text: str) -> tuple:
     """Solves math problems and returns (text_solution, has_math)"""
@@ -516,93 +611,98 @@ async def send_long_message(message: Message, reply_text: str, is_dm: bool):
             await message.channel.send(chunk)
 
 async def generate_ai_reply(user_id: int, user_message: str, force_context: str = None) -> tuple:
-    if user_id not in user_histories:
-        user_histories[user_id] = []
-        user_last_tone[user_id] = None
-
-    history = user_histories[user_id]
-
-    mode = get_user_mode(user_id)
-    teaching_mode = is_teaching_mode(user_id)
-    update_user_activity(user_id)
-
-    user_lower = user_message.lower()
-
-    teaching_mode_just_started = False
-    if not teaching_mode and detect_teaching_request(user_message):
-        set_teaching_mode(user_id, True)
-        teaching_mode = True
-        teaching_mode_just_started = True
-
-    subject = detect_subject(user_message)
-
-    math_solution, has_math = solve_math_problem(user_lower)
-
-    context_parts = []
-
-    if has_math and math_solution:
-        context_parts.append(f"Math solution computed: {math_solution} - Explain this to the user in your casual style, showing the steps")
-
-    if subject != 'general':
-        context_parts.append(f"Subject detected: {subject} - Use appropriate notation and terminology")
-
-    topics_discussed = get_user_memory(user_id, 'topics_discussed', [])
-    if topics_discussed:
-        context_parts.append(f"Previously discussed: {', '.join(topics_discussed[-3:])}")
-
-    context_parts.append("Analyze the user's message and determine: Is this an academic teaching request or casual conversation?")
-
-    combined_context = force_context if force_context else "; ".join(context_parts) if context_parts else None
-
     try:
-        sentiment_score = sentiment_analyzer.polarity_scores(user_message)["compound"]
-        negative_sentiment = sentiment_score < -0.5
-    except:
-        negative_sentiment = False
+        if user_id not in user_histories:
+            user_histories[user_id] = []
+            user_last_tone[user_id] = None
 
-    forced_bot = "are you a bot" in user_lower or "you're a bot" in user_lower or "ur a bot" in user_lower
-    keyword_insult = any(keyword in user_lower for keyword in ["stupid", "dumb", "idiot", "suck", "trash", "useless"])
-    aggressive_patterns = ["shut up", "stfu", "fuck you", "hate you", "go away"]
-    aggressive_detected = any(pattern in user_lower for pattern in aggressive_patterns)
+        history = user_histories[user_id]
 
-    forced_annoyed = forced_bot or (keyword_insult and negative_sentiment) or aggressive_detected
+        mode = get_user_mode(user_id)
+        teaching_mode = is_teaching_mode(user_id)
+        update_user_activity(user_id)
 
-    if forced_annoyed:
-        combined_context = "User was rude/insulting - respond with mild annoyance but stay playful"
-        teaching_mode = False
+        user_lower = user_message.lower()
 
-    history.append({"role": "user", "content": user_message})
+        teaching_mode_just_started = False
+        if not teaching_mode and detect_teaching_request(user_message):
+            set_teaching_mode(user_id, True)
+            teaching_mode = True
+            teaching_mode_just_started = True
 
-    max_history = MAX_HISTORY_TEACHING if teaching_mode else MAX_HISTORY_CASUAL
-    history = history[-max_history:]
-    user_histories[user_id] = history
+        subject = detect_subject(user_message)
 
-    system_prompt = get_system_prompt(mode, teaching_mode, subject, combined_context)
-    conversation = [{"role": "system", "content": system_prompt}] + history
+        math_solution, has_math = solve_math_problem(user_lower)
 
-    try:
+        context_parts = []
+
+        if has_math and math_solution:
+            context_parts.append(f"Math solution computed: {math_solution} - Explain this to the user in your casual style, showing the steps")
+
+        if subject != 'general':
+            context_parts.append(f"Subject detected: {subject} - Use appropriate notation and terminology")
+
+        topics_discussed = get_user_memory(user_id, 'topics_discussed', [])
+        if topics_discussed:
+            context_parts.append(f"Previously discussed: {', '.join(topics_discussed[-3:])}")
+
+        context_parts.append("Analyze the user's message and determine: Is this an academic teaching request or casual conversation?")
+
+        combined_context = force_context if force_context else "; ".join(context_parts) if context_parts else None
+
+        try:
+            sentiment_score = sentiment_analyzer.polarity_scores(user_message)["compound"]
+            negative_sentiment = sentiment_score < -0.5
+        except:
+            negative_sentiment = False
+
+        forced_bot = "are you a bot" in user_lower or "you're a bot" in user_lower or "ur a bot" in user_lower
+        keyword_insult = any(keyword in user_lower for keyword in ["stupid", "dumb", "idiot", "suck", "trash", "useless"])
+        aggressive_patterns = ["shut up", "stfu", "fuck you", "hate you", "go away"]
+        aggressive_detected = any(pattern in user_lower for pattern in aggressive_patterns)
+
+        forced_annoyed = forced_bot or (keyword_insult and negative_sentiment) or aggressive_detected
+
+        if forced_annoyed:
+            combined_context = "User was rude/insulting - respond with mild annoyance but stay playful"
+            teaching_mode = False
+
+        history.append({"role": "user", "content": user_message})
+
+        max_history = MAX_HISTORY_TEACHING if teaching_mode else MAX_HISTORY_CASUAL
+        history = history[-max_history:]
+        user_histories[user_id] = history
+
+        system_prompt = get_system_prompt(mode, teaching_mode, subject, combined_context)
+        conversation = [{"role": "system", "content": system_prompt}] + history
+
         max_tokens = 200 if teaching_mode else 100
 
+        print(f"[DEBUG] Calling HF API with max_tokens={max_tokens}, teaching_mode={teaching_mode}")
+
         loop = asyncio.get_event_loop()
-        try:
-            response = await asyncio.wait_for(
-                loop.run_in_executor(
-                    executor,
-                    lambda: hf_client.chat_completion(
-                        messages=conversation,
-                        model="meta-llama/Llama-3.2-3B-Instruct",
-                        temperature=0.7,
-                        max_tokens=max_tokens,
-                        top_p=0.9
-                    )
-                ),
-                timeout=15.0
-            )
-        except asyncio.TimeoutError:
-            print(f"AI API call timed out for user {user_id}")
-            return (None, False)
+
+        response = await asyncio.wait_for(
+            loop.run_in_executor(
+                executor,
+                lambda: hf_client.chat_completion(
+                    messages=conversation,
+                    model="meta-llama/Llama-3.2-3B-Instruct",
+                    temperature=0.7,
+                    max_tokens=max_tokens,
+                    top_p=0.9
+                )
+            ),
+            timeout=20.0
+        )
+
+        print(f"[DEBUG] HF API response received")
 
         reply_text = response.choices[0].message.content.strip()
+
+        if not reply_text:
+            print(f"[WARNING] Empty reply from AI")
+            return (None, False)
 
         if not forced_annoyed:
             reply_text = maybe_add_nickname(reply_text, mode)
@@ -611,11 +711,15 @@ async def generate_ai_reply(user_id: int, user_message: str, force_context: str 
         user_histories[user_id].append({"role": "assistant", "content": reply_text})
         user_last_tone[user_id] = "annoyed" if forced_annoyed else mode
 
-        return (reply_text or "hmm not sure how to respond! 😅", teaching_mode_just_started)
+        print(f"[DEBUG] Successfully generated reply: '{reply_text[:50]}'")
+        return (reply_text, teaching_mode_just_started)
 
+    except asyncio.TimeoutError:
+        print(f"[ERROR] AI API call timed out for user {user_id}")
+        return (None, False)
     except Exception as e:
         error_str = str(e)
-        print(f"AI Generation Error: {error_str}")
+        print(f"[ERROR] AI Generation Error: {error_str}")
 
         if "rate limit" in error_str.lower() or "429" in error_str or "quota" in error_str.lower():
             raise Exception("RATE_LIMIT")
@@ -899,7 +1003,7 @@ async def on_message(message: Message) -> None:
             context = "User selected flirty mode and it ACTIVATED (1% chance hit!) - be excited and flirty"
         else:
             context = "User selected flirty mode but it didn't activate (99% chance) - playfully tell them they'll stay besties for now"
-        
+
         try:
             response, _ = await generate_ai_reply(user_id, "user just selected flirty mode", context)
             if response:
@@ -1017,18 +1121,34 @@ async def on_message(message: Message) -> None:
 
     # Continue active conversation
     if in_active_conversation:
+        # Check for gibberish FIRST
+        if is_gibberish(message.content):
+            mode = get_user_mode(user_id)
+            gibberish_response = get_gibberish_response(mode)
+            if is_dm:
+                await message.channel.send(gibberish_response)
+            else:
+                await message.reply(gibberish_response, mention_author=False)
+            return
+
         if not ai_limit_reached:
             try:
+                print(f"[DEBUG] Generating AI reply for user {user_id}, message: '{message.content[:50]}'")
                 response, teaching_started = await generate_ai_reply(user_id, message.content)
+
                 if response:
+                    print(f"[DEBUG] AI response generated: '{response[:50]}'")
                     if teaching_started:
                         response = response + TEACHING_START_MSG
 
                     await send_long_message(message, response, is_dm)
                     return
+                else:
+                    print(f"[DEBUG] AI returned None response")
+
             except Exception as e:
                 error_msg = str(e)
-                print(f"AI Error: {error_msg}")
+                print(f"[ERROR] AI Error in conversation: {error_msg}")
 
                 if "rate limit" in error_msg.lower() or "429" in error_msg or "RATE_LIMIT" in error_msg:
                     ai_limit_reached = True
@@ -1041,6 +1161,8 @@ async def on_message(message: Message) -> None:
                             await message.reply(fallback, mention_author=False)
                         return
 
+        # Fallback when AI fails or limit reached
+        print(f"[DEBUG] Using fallback response for user {user_id}")
         fallback = "hmm having trouble responding rn 😭 try asking again or type `!help` for resources!"
         if is_dm:
             await message.channel.send(fallback)
@@ -1048,37 +1170,39 @@ async def on_message(message: Message) -> None:
             await message.reply(fallback, mention_author=False)
         return
 
-    # One-off mentions
+    # One-off mentions - Give ONE response without starting conversation
     if (contains_abg_tutor or is_mentioned) and not in_active_conversation:
         user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
         user_input_cleaned = user_input.lower().replace('abg tutor', '').strip()
 
+        # Check if it's gibberish
+        if user_input_cleaned and is_gibberish(user_input_cleaned):
+            await message.reply("lol what? 😭 type `!hi abg` to start chatting or `!help` for resources!", mention_author=False)
+            return
+
+        # If there's actual content, give ONE AI response (no conversation mode)
         if user_input_cleaned and not ai_limit_reached:
             try:
+                # Generate ONE response without activating conversation mode
                 response, _ = await generate_ai_reply(
                     user_id, 
                     user_input_cleaned, 
-                    "One-off question (not in conversation) - answer briefly then clear history"
+                    "This is a ONE-OFF mention, not a conversation. Give a brief, helpful response. Tell them to type `!hi abg` if they want to continue chatting."
                 )
                 if response:
-                    await send_long_message(message, response, False)
-                    if user_id in user_histories:
-                        del user_histories[user_id]
-                    if user_id in user_last_tone:
-                        del user_last_tone[user_id]
+                    # Add guidance to start proper conversation
+                    response += "\n*(wanna keep chatting? type `!hi abg`!)*"
+                    await message.reply(response, mention_author=False)
                     return
             except Exception as e:
                 error_str = str(e)
-                print(f"AI Error for one-off: {error_str}")
+                print(f"AI Error for one-off mention: {error_str}")
 
                 if "RATE_LIMIT" in error_str or "rate limit" in error_str.lower():
                     ai_limit_reached = True
-                    if not ai_limit_notified:
-                        ai_limit_notified = True
-                        await message.reply("yo heads up! 😭 we hit the daily ai limit. type `!help` for resources tho! 💕", mention_author=False)
-                        return
 
-        await message.reply("hey! wanna start a conversation? type `!hi abg` or check `!help` for study resources! 💕", mention_author=False)
+        # Fallback for mentions without content or when AI fails
+        await message.reply("hey! type `!hi abg` to chat or `!help` for study resources! 💕", mention_author=False)
         return
 
 def main() -> None:
