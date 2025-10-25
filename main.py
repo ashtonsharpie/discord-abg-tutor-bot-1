@@ -16,6 +16,9 @@ from sympy import symbols, simplify, solve, diff, integrate, limit, latex
 from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from PIL import Image
+import pytesseract
+import io
 
 PORT = int(os.environ.get("PORT", 10000))
 
@@ -206,6 +209,33 @@ def get_gibberish_response(mode: str) -> str:
     ]
 
     return random.choice(responses_flirty if mode == "flirty" else responses_bestie)
+
+async def process_image(attachment_url: str) -> str:
+    """Extract text from image using OCR"""
+    try:
+        import aiohttp
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(attachment_url) as resp:
+                if resp.status == 200:
+                    image_data = await resp.read()
+                    image = Image.open(io.BytesIO(image_data))
+
+                    # Extract text using OCR
+                    loop = asyncio.get_event_loop()
+                    text = await loop.run_in_executor(
+                        executor,
+                        lambda: pytesseract.image_to_string(image)
+                    )
+
+                    if text.strip():
+                        return f"[Image contains text: {text.strip()}]"
+                    else:
+                        return "[Image uploaded - appears to be a graph/chart/diagram]"
+        return "[Could not process image]"
+    except Exception as e:
+        print(f"[ERROR] Image processing failed: {e}")
+        return "[Image uploaded but couldn't process it - please describe what you need help with]"
 
 def solve_math_problem(problem_text: str) -> tuple:
     """Solves math problems and returns (text_solution, has_math)"""
@@ -1138,8 +1168,23 @@ async def on_message(message: Message) -> None:
 
     # Continue active conversation
     if in_active_conversation:
-        # Check for gibberish FIRST
-        if is_gibberish(message.content):
+        # Check for image attachments FIRST
+        image_description = ""
+        if message.attachments:
+            for attachment in message.attachments:
+                if attachment.content_type and attachment.content_type.startswith('image/'):
+                    print(f"[DEBUG] Processing image from user {user_id}")
+                    image_description = await process_image(attachment.url)
+                    print(f"[DEBUG] Image processed: {image_description[:100]}")
+                    break
+
+        # Combine message content with image description
+        full_message = message.content
+        if image_description:
+            full_message = f"{message.content}\n\n{image_description}" if message.content else image_description
+
+        # Check for gibberish FIRST (but skip if there's an image)
+        if not image_description and is_gibberish(message.content):
             mode = get_user_mode(user_id)
             gibberish_response = get_gibberish_response(mode)
             if is_dm:
@@ -1150,8 +1195,8 @@ async def on_message(message: Message) -> None:
 
         if not ai_limit_reached:
             try:
-                print(f"[DEBUG] Generating AI reply for user {user_id}, message: '{message.content[:50]}'")
-                response, teaching_started = await generate_ai_reply(user_id, message.content)
+                print(f"[DEBUG] Generating AI reply for user {user_id}, message: '{full_message[:50]}'")
+                response, teaching_started = await generate_ai_reply(user_id, full_message)
 
                 if response:
                     print(f"[DEBUG] AI response generated: '{response[:50]}'")
