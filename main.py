@@ -225,16 +225,28 @@ async def process_image(attachment_url: str) -> str:
                     loop = asyncio.get_event_loop()
                     text = await loop.run_in_executor(
                         executor,
-                        lambda: pytesseract.image_to_string(image)
+                        lambda: pytesseract.image_to_string(image, lang='eng+chi_sim')  # Support English + Simplified Chinese
                     )
 
+                    # DEBUG: Print what OCR actually extracted
+                    print(f"[OCR DEBUG] Raw text extracted: '{text}'")
+                    print(f"[OCR DEBUG] Text length: {len(text.strip())}")
+                    sys.stdout.flush()
+
                     if text.strip():
-                        return f"[Image contains text: {text.strip()}]"
+                        # Clean up the text - remove excessive whitespace
+                        cleaned_text = ' '.join(text.split())
+                        print(f"[OCR DEBUG] Cleaned text: '{cleaned_text}'")
+                        sys.stdout.flush()
+                        return f"[Image contains text: {cleaned_text}]"
                     else:
-                        return "[Image uploaded - appears to be a graph/chart/diagram]"
+                        print(f"[OCR DEBUG] No text found in image")
+                        sys.stdout.flush()
+                        return "[Image uploaded - no readable text detected. If you need help with this image, please describe what's in it or what you need help with.]"
         return "[Could not process image]"
     except Exception as e:
         print(f"[ERROR] Image processing failed: {e}")
+        sys.stdout.flush()
         return "[Image uploaded but couldn't process it - please describe what you need help with]"
 
 def solve_math_problem(problem_text: str) -> tuple:
