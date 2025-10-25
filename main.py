@@ -1286,9 +1286,6 @@ async def on_message(message: Message) -> None:
 
         # If there's actual content, give ONE AI response (no conversation mode)
         if user_input_cleaned and not ai_limit_reached:
-
-        # If there's actual content, give ONE AI response (no conversation mode)
-        if user_input_cleaned and not ai_limit_reached:
             try:
                 print(f"[DEBUG] One-off mention from user {user_id}: '{user_input_cleaned}'")  # ADD THIS
                 print(f"[DEBUG] Calling AI for one-off response...")  # ADD THIS
