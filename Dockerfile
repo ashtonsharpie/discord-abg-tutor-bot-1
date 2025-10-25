@@ -3,6 +3,10 @@ FROM python:3.13.4-slim
 # Install system dependencies (tesseract-ocr for image text extraction + build tools)
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
+    tesseract-ocr-chi-sim \
+    tesseract-ocr-chi-tra \
+    tesseract-ocr-spa \
+    tesseract-ocr-fra \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
