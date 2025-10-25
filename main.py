@@ -1265,10 +1265,27 @@ async def on_message(message: Message) -> None:
         user_input = message.content.replace(f'<@{client.user.id}>', '').replace(f'<@!{client.user.id}>', '').strip()
         user_input_cleaned = user_input.lower().replace('abg tutor', '').strip()
 
-        # Check if it's gibberish
-        if user_input_cleaned and is_gibberish(user_input_cleaned):
+        # ADD THIS: Check for image attachments in one-off mentions
+        image_description = ""
+        if message.attachments:
+            for attachment in message.attachments:
+                if attachment.content_type and attachment.content_type.startswith('image/'):
+                    print(f"[DEBUG] Processing image in one-off mention from user {user_id}")
+                    image_description = await process_image(attachment.url)
+                    print(f"[DEBUG] Image processed: {image_description[:100]}")
+                    break
+
+        # Combine message content with image description
+        if image_description:
+            user_input_cleaned = f"{user_input_cleaned}\n\n{image_description}" if user_input_cleaned else image_description
+
+        # Check if it's gibberish (but skip if there's an image)
+        if user_input_cleaned and not image_description and is_gibberish(user_input_cleaned):
             await message.reply("lol what? 😭 type `!hi abg` to start chatting or `!help` for resources!", mention_author=False)
             return
+
+        # If there's actual content, give ONE AI response (no conversation mode)
+        if user_input_cleaned and not ai_limit_reached:
 
         # If there's actual content, give ONE AI response (no conversation mode)
         if user_input_cleaned and not ai_limit_reached:
