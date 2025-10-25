@@ -214,6 +214,7 @@ async def process_image(attachment_url: str) -> str:
     """Extract text from image using OCR"""
     try:
         import aiohttp
+        from PIL import ImageEnhance
 
         async with aiohttp.ClientSession() as session:
             async with session.get(attachment_url) as resp:
@@ -221,11 +222,26 @@ async def process_image(attachment_url: str) -> str:
                     image_data = await resp.read()
                     image = Image.open(io.BytesIO(image_data))
 
-                    # Extract text using OCR
+                    # Convert to RGB if necessary
+                    if image.mode != 'RGB':
+                        image = image.convert('RGB')
+
+                    # Preprocess image to improve OCR accuracy
+                    # Increase contrast
+                    enhancer = ImageEnhance.Contrast(image)
+                    image = enhancer.enhance(2.0)
+
+                    # Increase sharpness
+                    enhancer = ImageEnhance.Sharpness(image)
+                    image = enhancer.enhance(2.0)
+
+                    # Try multiple language combinations
                     loop = asyncio.get_event_loop()
+
+                    # First try: English + Simplified Chinese + Traditional Chinese
                     text = await loop.run_in_executor(
                         executor,
-                        lambda: pytesseract.image_to_string(image, lang='eng+chi_sim')  # Support English + Simplified Chinese
+                        lambda: pytesseract.image_to_string(image, lang='eng+chi_sim+chi_tra')
                     )
 
                     # DEBUG: Print what OCR actually extracted
