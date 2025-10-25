@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-fra \
     gcc \
     g++ \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && tesseract --list-langs  # Verify languages are installed
 
 # Set working directory
 WORKDIR /app
