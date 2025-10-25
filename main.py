@@ -47,7 +47,10 @@ executor = ThreadPoolExecutor(max_workers=3)
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 HF_API_KEY: Final[str] = os.getenv('HUGGINGFACE_API_KEY')
 
-hf_client = InferenceClient(token=HF_API_KEY)
+hf_client = InferenceClient(
+    model="meta-llama/Llama-3.2-3B-Instruct",
+    token=HF_API_KEY
+)
 sentiment_analyzer = SentimentIntensityAnalyzer()
 
 intents: Intents = Intents.default()
@@ -690,7 +693,6 @@ async def generate_ai_reply(user_id: int, user_message: str, force_context: str 
                 executor,
                 lambda: hf_client.chat_completion(
                     messages=conversation,
-                    model="meta-llama/Llama-3.2-3B-Instruct",
                     temperature=0.7,
                     max_tokens=max_tokens,
                     top_p=0.9
