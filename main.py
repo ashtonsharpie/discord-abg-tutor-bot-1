@@ -265,6 +265,38 @@ async def process_image(attachment_url: str) -> str:
         sys.stdout.flush()
         return "[Image uploaded but couldn't process it - please describe what you need help with]"
 
+async def show_image_processing_animation(channel, mode: str):
+    """Show smooth animated loading message while processing image"""
+    if mode == "flirty":
+        messages = [
+            "hold on cutie",
+            "hold on cutie.",
+            "hold on cutie. .",
+            "hold on cutie. . .",
+            "hold on cutie. . . .",
+            "hold on cutie. . . . .",
+            "analyzing for you babe 💕",
+        ]
+    else:  # bestie mode
+        messages = [
+            "hold on bestie",
+            "hold on bestie.",
+            "hold on bestie. .",
+            "hold on bestie. . .",
+            "hold on bestie. . . .",
+            "hold on bestie. . . . .",
+            "analyzing this for you 👀",
+        ]
+    
+    processing_msg = await channel.send(messages[0])
+    
+    # Animate the dots
+    for msg in messages[1:]:
+        await asyncio.sleep(0.3)
+        await processing_msg.edit(content=msg)
+    
+    return processing_msg
+
 def solve_math_problem(problem_text: str) -> tuple:
     """Solves math problems and returns (text_solution, has_math)"""
     try:
@@ -1038,11 +1070,6 @@ async def on_message(message: Message) -> None:
     print(f"[DEBUG] abg_tutor={contains_abg_tutor}, mentioned={is_mentioned}")
     sys.stdout.flush()
 
-    user_id = message.author.id
-    is_dm = isinstance(message.channel, DMChannel)
-    contains_abg_tutor = 'abg tutor' in lowered_content
-    is_mentioned = client.user.mentioned_in(message)
-
     # Welcome new users
     if user_id not in welcomed_users and (is_dm or contains_abg_tutor or is_mentioned):
         welcomed_users.add(user_id)
@@ -1202,7 +1229,16 @@ async def on_message(message: Message) -> None:
             for attachment in message.attachments:
                 if attachment.content_type and attachment.content_type.startswith('image/'):
                     print(f"[DEBUG] Processing image from user {user_id}")
-                    image_description = await process_image(attachment.url)
+                    
+                    # Get user mode for personalized animation
+                    mode = get_user_mode(user_id)
+                    
+                    # Show animated processing message
+                    async with message.channel.typing():
+                        processing_msg = await show_image_processing_animation(message.channel, mode)
+                        image_description = await process_image(attachment.url)
+                        await processing_msg.delete()
+                    
                     print(f"[DEBUG] Image processed: {image_description[:100]}")
                     break
 
@@ -1266,12 +1302,22 @@ async def on_message(message: Message) -> None:
         user_input_cleaned = user_input.lower().replace('abg tutor', '').strip()
 
         # ADD THIS: Check for image attachments in one-off mentions
+        # Check for image attachments in one-off mentions
         image_description = ""
         if message.attachments:
             for attachment in message.attachments:
                 if attachment.content_type and attachment.content_type.startswith('image/'):
                     print(f"[DEBUG] Processing image in one-off mention from user {user_id}")
-                    image_description = await process_image(attachment.url)
+                    
+                    # Get user mode for personalized animation
+                    mode = get_user_mode(user_id)
+                    
+                    # Show animated processing message
+                    async with message.channel.typing():
+                        processing_msg = await show_image_processing_animation(message.channel, mode)
+                        image_description = await process_image(attachment.url)
+                        await processing_msg.delete()  # Remove processing message
+                    
                     print(f"[DEBUG] Image processed: {image_description[:100]}")
                     break
 
