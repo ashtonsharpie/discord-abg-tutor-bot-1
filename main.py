@@ -75,7 +75,7 @@ NEW_USER_WELCOME = """hey! welcome 💕 i'm abg tutor, here to help you with APs
 • `!hi abg` = start chatting with me
 • `!bye abg` = end conversation
 • `!bestie` = friendly study mode
-• `!flirty` = flirty study mode (1% chance)
+• `!flirty` = flirty study mode (10% chance)
 
 **dms work too!** just message me directly and we can chat
 
@@ -407,7 +407,7 @@ def update_user_activity(user_id: int):
 
 def set_user_mode(user_id: int, mode: str):
     if mode == "flirty":
-        actual_mode = "flirty" if random.random() < 0.01 else "bestie"
+        actual_mode = "flirty" if random.random() < 0.10 else "bestie"
     else:
         actual_mode = mode
 
@@ -1028,7 +1028,7 @@ def get_response(user_input: str) -> str:
 
 **💬 Study Modes**
 `!bestie` = friendly casual study sessions
-`!flirty` = playful study vibes (1% random chance)
+`!flirty` = playful study vibes (10% chance)
 
 **how to use me:**
 • `!help` = see all resources
@@ -1114,12 +1114,12 @@ async def on_message(message: Message) -> None:
                 if actual_mode == "flirty":
                     await message.reply("flirty mode activated cutie! 💖 ready to study with me?" + CONVERSATION_START_MSG, mention_author=False)
                 else:
-                    await message.reply("tried flirty mode but we\'re staying besties for now 😌💕 (1% chance!)" + CONVERSATION_START_MSG, mention_author=False)
+                    await message.reply("tried flirty mode but we\'re staying besties for now 😌💕 (10% chance!)" + CONVERSATION_START_MSG, mention_author=False)
         except:
             if actual_mode == "flirty":
                 await message.reply("flirty mode activated cutie! 💖 ready to study with me?" + CONVERSATION_START_MSG, mention_author=False)
             else:
-                await message.reply("tried flirty mode but we\'re staying besties for now 😌💕 (1% chance!)" + CONVERSATION_START_MSG, mention_author=False)
+                await message.reply("tried flirty mode but we\'re staying besties for now 😌💕 (10% chance!)" + CONVERSATION_START_MSG, mention_author=False)
         return
 
     # Stop teaching command
